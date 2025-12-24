@@ -303,3 +303,4 @@ For support and questions, please open an issue in the repository.
 ---
 
 **Note**: This is a medical application. Ensure compliance with relevant healthcare regulations (HIPAA, GDPR, etc.) before deploying to production.
+# healtcare-
