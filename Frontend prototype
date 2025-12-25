@@ -1,0 +1,436 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { Upload, Activity, AlertCircle, CheckCircle, Eye, Zap, Brain, FileImage } from 'lucide-react';
+
+const MediScanAI = () => {
+  const [image, setImage] = useState(null);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [results, setResults] = useState(null);
+  const [activeTab, setActiveTab] = useState('upload');
+  const canvasRef = useRef(null);
+  const imageRef = useRef(null);
+
+  // Simulated AI analysis with contour mapping
+  const analyzeImage = async (imgElement) => {
+    setAnalyzing(true);
+    setActiveTab('results');
+
+    // Simulate processing time
+    await new Promise(resolve => setTimeout(resolve, 3000));
+
+    // Draw contour mapping on canvas
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    canvas.width = imgElement.width;
+    canvas.height = imgElement.height;
+
+    // Draw original image
+    ctx.drawImage(imgElement, 0, 0, canvas.width, canvas.height);
+
+    // Simulate abnormal regions with contour overlays
+    const regions = [
+      { x: canvas.width * 0.4, y: canvas.height * 0.3, radius: 60, severity: 'high' },
+      { x: canvas.width * 0.6, y: canvas.height * 0.5, radius: 40, severity: 'medium' }
+    ];
+
+    regions.forEach((region, idx) => {
+      // Draw contour circle
+      ctx.strokeStyle = region.severity === 'high' ? 'rgba(255, 50, 50, 0.8)' : 'rgba(255, 165, 0, 0.8)';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(region.x, region.y, region.radius, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Fill with semi-transparent color
+      ctx.fillStyle = region.severity === 'high' ? 'rgba(255, 50, 50, 0.2)' : 'rgba(255, 165, 0, 0.2)';
+      ctx.fill();
+
+      // Add label
+      ctx.fillStyle = 'white';
+      ctx.font = 'bold 14px Arial';
+      ctx.fillText(`Region ${idx + 1}`, region.x - 30, region.y - region.radius - 10);
+    });
+
+    // Simulated AI results
+    const detectionResults = {
+      condition: 'Pneumonia',
+      confidence: 87.3,
+      severity: 'Moderate',
+      regions: [
+        {
+          id: 1,
+          location: 'Right lower lobe',
+          confidence: 89.2,
+          description: 'Consolidation pattern detected',
+          features: ['Increased opacity', 'Air bronchogram visible', 'Irregular borders']
+        },
+        {
+          id: 2,
+          location: 'Right middle lobe',
+          confidence: 72.1,
+          description: 'Early infiltrate',
+          features: ['Subtle opacity increase', 'Preserved lung architecture']
+        }
+      ],
+      reasoning: [
+        'Dense opacity in right lower lobe consistent with consolidation',
+        'Air bronchogram pattern suggests alveolar filling',
+        'Location and pattern typical for bacterial pneumonia',
+        'No pleural effusion detected',
+        'Heart size within normal limits'
+      ],
+      recommendations: [
+        'Immediate clinical correlation recommended',
+        'Consider chest CT for detailed assessment',
+        'Monitor for progression with follow-up imaging',
+        'Evaluate patient symptoms and vitals'
+      ],
+      metrics: {
+        sensitivity: 94.2,
+        specificity: 91.8,
+        processingTime: '2.8s'
+      }
+    };
+
+    setResults(detectionResults);
+    setAnalyzing(false);
+  };
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          setImage(event.target.result);
+          imageRef.current = img;
+          analyzeImage(img);
+        };
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const getSeverityColor = (severity) => {
+    const colors = {
+      'high': 'text-red-600 bg-red-50 border-red-200',
+      'medium': 'text-orange-600 bg-orange-50 border-orange-200',
+      'low': 'text-yellow-600 bg-yellow-50 border-yellow-200'
+    };
+    return colors[severity.toLowerCase()] || colors.medium;
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50">
+      {/* Header */}
+      <header className="bg-white border-b border-gray-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="bg-gradient-to-br from-blue-600 to-cyan-600 p-2 rounded-lg">
+                <Activity className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">MediScan AI</h1>
+                <p className="text-sm text-gray-600">Early Disease Detection System</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="text-right">
+                <div className="text-sm text-gray-600">Model Accuracy</div>
+                <div className="text-lg font-bold text-green-600">94.2%</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Navigation Tabs */}
+      <div className="max-w-7xl mx-auto px-6 mt-6">
+        <div className="flex gap-2 border-b border-gray-200">
+          {['upload', 'results'].map(tab => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-6 py-3 font-medium transition-colors ${
+                activeTab === tab
+                  ? 'text-blue-600 border-b-2 border-blue-600'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              {tab === 'upload' ? (
+                <span className="flex items-center gap-2">
+                  <Upload className="w-4 h-4" />
+                  Upload Image
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  <Brain className="w-4 h-4" />
+                  Analysis Results
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        {activeTab === 'upload' && (
+          <div className="space-y-6">
+            {/* Upload Section */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+              <label className="block">
+                <div className="border-3 border-dashed border-gray-300 rounded-xl p-12 text-center hover:border-blue-400 hover:bg-blue-50 transition-all cursor-pointer">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                  />
+                  <FileImage className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                  <p className="text-lg font-medium text-gray-700 mb-2">
+                    Upload Medical Image
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Supports X-rays, CT scans • JPG, PNG • Max 10MB
+                  </p>
+                </div>
+              </label>
+            </div>
+
+            {/* Features Grid */}
+            <div className="grid md:grid-cols-3 gap-6">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div className="bg-blue-100 w-12 h-12 rounded-lg flex items-center justify-center mb-4">
+                  <Eye className="w-6 h-6 text-blue-600" />
+                </div>
+                <h3 className="font-bold text-gray-900 mb-2">Contour Mapping</h3>
+                <p className="text-sm text-gray-600">
+                  Visual overlays highlight abnormal regions with precise boundaries
+                </p>
+              </div>
+
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div className="bg-purple-100 w-12 h-12 rounded-lg flex items-center justify-center mb-4">
+                  <Brain className="w-6 h-6 text-purple-600" />
+                </div>
+                <h3 className="font-bold text-gray-900 mb-2">Explainable AI</h3>
+                <p className="text-sm text-gray-600">
+                  Clear reasoning behind every diagnosis with detailed explanations
+                </p>
+              </div>
+
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div className="bg-green-100 w-12 h-12 rounded-lg flex items-center justify-center mb-4">
+                  <Zap className="w-6 h-6 text-green-600" />
+                </div>
+                <h3 className="font-bold text-gray-900 mb-2">Fast Processing</h3>
+                <p className="text-sm text-gray-600">
+                  Optimized for resource-limited settings with quick results
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'results' && (
+          <div className="space-y-6">
+            {analyzing ? (
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+                <div className="animate-spin w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div>
+                <p className="text-lg font-medium text-gray-700">Analyzing medical image...</p>
+                <p className="text-sm text-gray-500 mt-2">Processing contours and detecting abnormalities</p>
+              </div>
+            ) : results ? (
+              <div className="grid lg:grid-cols-2 gap-6">
+                {/* Image with Contour Overlay */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                  <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <Eye className="w-5 h-5 text-blue-600" />
+                    Contour Mapping Analysis
+                  </h2>
+                  <div className="relative">
+                    <canvas
+                      ref={canvasRef}
+                      className="w-full h-auto rounded-lg border border-gray-200"
+                    />
+                    <div className="absolute top-3 right-3 bg-black bg-opacity-70 text-white px-3 py-1 rounded-full text-xs font-medium">
+                      Processed: {results.metrics.processingTime}
+                    </div>
+                  </div>
+                  <div className="mt-4 flex gap-4">
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 bg-red-500 bg-opacity-30 border-2 border-red-500 rounded"></div>
+                      <span className="text-xs text-gray-600">High Priority</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 bg-orange-500 bg-opacity-30 border-2 border-orange-500 rounded"></div>
+                      <span className="text-xs text-gray-600">Medium Priority</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Diagnosis Results */}
+                <div className="space-y-6">
+                  {/* Primary Diagnosis */}
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <h2 className="text-lg font-bold text-gray-900 mb-1">Primary Diagnosis</h2>
+                        <p className="text-3xl font-bold text-blue-600">{results.condition}</p>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm text-gray-600">Confidence</div>
+                        <div className="text-2xl font-bold text-green-600">{results.confidence}%</div>
+                      </div>
+                    </div>
+                    <div className={`inline-block px-3 py-1 rounded-full text-sm font-medium border ${getSeverityColor(results.severity)}`}>
+                      Severity: {results.severity}
+                    </div>
+                  </div>
+
+                  {/* Model Performance */}
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <h3 className="font-bold text-gray-900 mb-4">Model Performance</h3>
+                    <div className="space-y-3">
+                      <div>
+                        <div className="flex justify-between text-sm mb-1">
+                          <span className="text-gray-600">Sensitivity</span>
+                          <span className="font-medium">{results.metrics.sensitivity}%</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div className="bg-green-600 h-2 rounded-full" style={{width: `${results.metrics.sensitivity}%`}}></div>
+                        </div>
+                      </div>
+                      <div>
+                        <div className="flex justify-between text-sm mb-1">
+                          <span className="text-gray-600">Specificity</span>
+                          <span className="font-medium">{results.metrics.specificity}%</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div className="bg-blue-600 h-2 rounded-full" style={{width: `${results.metrics.specificity}%`}}></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Detected Regions */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 lg:col-span-2">
+                  <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <AlertCircle className="w-5 h-5 text-orange-600" />
+                    Detected Abnormal Regions
+                  </h2>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    {results.regions.map((region) => (
+                      <div key={region.id} className="border border-gray-200 rounded-lg p-4 hover:border-blue-400 transition-colors">
+                        <div className="flex items-start justify-between mb-3">
+                          <div>
+                            <h3 className="font-bold text-gray-900">Region {region.id}</h3>
+                            <p className="text-sm text-gray-600">{region.location}</p>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-xs text-gray-600">Confidence</div>
+                            <div className="text-lg font-bold text-blue-600">{region.confidence}%</div>
+                          </div>
+                        </div>
+                        <p className="text-sm text-gray-700 mb-3">{region.description}</p>
+                        <div className="space-y-1">
+                          {region.features.map((feature, idx) => (
+                            <div key={idx} className="flex items-center gap-2 text-xs text-gray-600">
+                              <CheckCircle className="w-3 h-3 text-green-600" />
+                              {feature}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Explainable AI Reasoning */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                  <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <Brain className="w-5 h-5 text-purple-600" />
+                    AI Reasoning & Explanation
+                  </h2>
+                  <div className="space-y-3">
+                    {results.reasoning.map((reason, idx) => (
+                      <div key={idx} className="flex gap-3">
+                        <div className="bg-purple-100 text-purple-600 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
+                          {idx + 1}
+                        </div>
+                        <p className="text-sm text-gray-700">{reason}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Recommendations */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                  <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <AlertCircle className="w-5 h-5 text-blue-600" />
+                    Clinical Recommendations
+                  </h2>
+                  <div className="space-y-3">
+                    {results.recommendations.map((rec, idx) => (
+                      <div key={idx} className="flex gap-3">
+                        <div className="bg-blue-100 text-blue-600 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
+                          {idx + 1}
+                        </div>
+                        <p className="text-sm text-gray-700">{rec}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="lg:col-span-2 flex gap-4">
+                  <button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors">
+                    Generate PDF Report
+                  </button>
+                  <button className="flex-1 bg-white hover:bg-gray-50 text-gray-700 font-medium py-3 px-6 rounded-lg border border-gray-300 transition-colors">
+                    Share with Specialist
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setImage(null);
+                      setResults(null);
+                      setActiveTab('upload');
+                    }}
+                    className="flex-1 bg-white hover:bg-gray-50 text-gray-700 font-medium py-3 px-6 rounded-lg border border-gray-300 transition-colors"
+                  >
+                    Analyze New Image
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+                <Upload className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                <p className="text-lg font-medium text-gray-700">No image uploaded</p>
+                <p className="text-sm text-gray-500 mt-2">Please upload a medical image to begin analysis</p>
+                <button
+                  onClick={() => setActiveTab('upload')}
+                  className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition-colors"
+                >
+                  Go to Upload
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Footer */}
+      <footer className="mt-12 bg-white border-t border-gray-200 py-6">
+        <div className="max-w-7xl mx-auto px-6 text-center text-sm text-gray-600">
+          <p>MediScan AI • Empowering healthcare in resource-limited settings</p>
+          <p className="mt-1">For research and educational purposes • Always consult with healthcare professionals</p>
+        </div>
+      </footer>
+    </div>
+  );
+};
+
+export default MediScanAI;
